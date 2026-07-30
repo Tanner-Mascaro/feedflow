@@ -12,7 +12,7 @@ const SUPABASE_URL = "https://ymejzjbabevzippdjitd.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_goJVuXzFM37hixhgGn-jTQ_KVS2PMbz";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxv6uz821tnRjLxJfDfkoKOfDu5zLdMzde5bB42SKB6ok5vGfjOqW1_fb1MSqCT4FVy/exec";
+const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwcRZSibHEtyQtib7kOOS_h2f3SrB5LdKiu7HFaI0Jbcb0JOZlqvPJmk-HHsFdoVPnB/exec";
 function pushToSheet(movement){
   fetch(SHEETS_WEBHOOK_URL, {
     method: "POST",
@@ -48,7 +48,7 @@ const ROLES = [
   { id:"cfo",     ini:"GM", title:"GM",                desc:"Reports & dashboards",                       view:"dash" },
 ];
 
-const NAMES = { tech:"Marco (Food Production)", manager:"Todd Hawkes (Operations Manager)", cfo:"Jamey Mascaro (GM)" };
+const NAMES = { tech:"Paige (Food Production)", manager:"Todd (Operations Manager)", cfo:"Jamey (GM)" };
 
 let state = {
   role: null,
