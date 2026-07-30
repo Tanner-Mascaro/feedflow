@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>FeedFlow — Batch Logging</title>
-  <meta name="description" content="Log feed batches at the mixer. No more end-of-day guesswork." />
+  <title>FeedFlow — Inventory</title>
+  <meta name="description" content="Log feed inventory movements at the mixer. No more end-of-day guesswork." />
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest" />
@@ -58,6 +58,7 @@
     </div>
     <nav class="tabs" id="tabs">
       <button data-view="log" class="tab is-active">Log batch</button>
+      <button data-view="txn" class="tab">Transactions</button>
       <button data-view="dash" class="tab">Dashboard</button>
     </nav>
     <div class="topbar-r">
@@ -66,21 +67,21 @@
     </div>
   </header>
 
-  <!-- ===== LOG VIEW ===== -->
+  <!-- ===== LOG BATCH (TO MIX) VIEW ===== -->
   <main id="view-log" class="view">
     <div class="log-wrap">
       <!-- Batch ticket -->
       <form class="ticket" id="ticketForm" autocomplete="off">
         <div class="ticket-notch"></div>
         <div class="ticket-head">
-          <span class="ticket-kicker">Batch ticket</span>
+          <span class="ticket-kicker">Batch ticket · To Mix</span>
           <span class="ticket-no" id="ticketNo">—</span>
         </div>
 
         <div class="field">
-          <label for="plant">Plant</label>
+          <label for="plant">Location</label>
           <div class="seg" id="plantSeg">
-            <button type="button" class="seg-opt is-active" data-val="Sandy">Sandy</button>
+            <button type="button" class="seg-opt is-active" data-val="Midvale">Midvale</button>
             <button type="button" class="seg-opt" data-val="Logan">Logan</button>
           </div>
         </div>
@@ -111,7 +112,7 @@
         </div>
 
         <button type="submit" class="btn-primary btn-lg">Log batch</button>
-        <p class="ticket-hint">Captured with time, plant, and your name — automatically.</p>
+        <p class="ticket-hint">Captured with time, location, and your name — automatically.</p>
       </form>
 
       <!-- Today's log -->
@@ -126,12 +127,93 @@
     </div>
   </main>
 
+  <!-- ===== TRANSACTIONS VIEW ===== -->
+  <main id="view-txn" class="view hidden">
+    <div class="log-wrap">
+      <!-- Transaction ticket -->
+      <form class="ticket" id="txnForm" autocomplete="off">
+        <div class="ticket-notch"></div>
+        <div class="ticket-head">
+          <span class="ticket-kicker">Transaction</span>
+        </div>
+
+        <div class="field">
+          <label for="txnLocation">Location</label>
+          <div class="seg" id="txnLocationSeg">
+            <button type="button" class="seg-opt is-active" data-val="Midvale">Midvale</button>
+            <button type="button" class="seg-opt" data-val="Logan">Logan</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="txnType">Movement type</label>
+          <select id="txnType">
+            <option value="received">Received</option>
+            <option value="sold_raw">Sold (Raw Ingredient)</option>
+            <option value="transferred">Transferred</option>
+            <option value="adjusted">Adjusted</option>
+          </select>
+        </div>
+
+        <div class="field" id="txnSignField">
+          <label>Direction</label>
+          <div class="seg" id="txnSignSeg">
+            <button type="button" class="seg-opt is-active" data-val="in">In (+)</button>
+            <button type="button" class="seg-opt" data-val="out">Out (−)</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="txnIngredient">Ingredient</label>
+          <select id="txnIngredient" required></select>
+        </div>
+
+        <div class="field-row">
+          <div class="field grow">
+            <label for="txnQty">Amount</label>
+            <input id="txnQty" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required />
+          </div>
+          <div class="field">
+            <label for="txnUnit">Unit</label>
+            <select id="txnUnit">
+              <option value="lb">lb</option>
+              <option value="gal">gal</option>
+              <option value="ton">ton</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="txnTruck">Truck # <span class="opt">(optional)</span></label>
+          <input id="txnTruck" type="text" placeholder="e.g. 7809" />
+        </div>
+
+        <div class="field">
+          <label for="txnNotes">Notes <span class="opt">(optional)</span></label>
+          <input id="txnNotes" type="text" placeholder="e.g. supplier, PO #, reason for adjustment" />
+        </div>
+
+        <button type="submit" class="btn-primary btn-lg">Log transaction</button>
+        <p class="ticket-hint">Captured with time, location, and your name — automatically.</p>
+      </form>
+
+      <!-- Today's transactions -->
+      <div class="today">
+        <div class="today-head">
+          <h2>Logged today</h2>
+        </div>
+        <ul class="entry-list" id="txnTodayList"></ul>
+        <p class="empty" id="txnTodayEmpty">Nothing logged yet today. Your first transaction shows up here.</p>
+      </div>
+    </div>
+  </main>
+
   <!-- ===== DASHBOARD VIEW ===== -->
   <main id="view-dash" class="view hidden">
     <div class="dash-head">
       <div>
         <h1>Operations dashboard</h1>
-        <p class="dash-sub">Live raw-material usage across Sandy &amp; Logan. From estimates to actuals.</p>
+        <p class="dash-sub">Live raw-material usage across Midvale &amp; Logan. From estimates to actuals.</p>
       </div>
       <div class="dash-actions">
         <select id="rangeSel" class="rangesel">
@@ -147,24 +229,62 @@
 
     <div class="panels">
       <div class="panel panel-chart">
-        <div class="panel-head"><h3>Usage by ingredient</h3><span class="panel-note" id="chartNote"></span></div>
+        <div class="panel-head"><h3>To Mix by ingredient</h3><span class="panel-note" id="chartNote"></span></div>
         <div class="chart-box"><canvas id="usageChart"></canvas></div>
       </div>
       <div class="panel panel-chart">
-        <div class="panel-head"><h3>Daily volume</h3><span class="panel-note">lb logged per day</span></div>
+        <div class="panel-head"><h3>Daily volume</h3><span class="panel-note">lb mixed per day</span></div>
         <div class="chart-box"><canvas id="dailyChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="bal-panels">
+      <div class="panel">
+        <div class="panel-head"><h3>Midvale inventory</h3><span class="panel-note">Beg → End balance</span></div>
+        <div class="table-scroll">
+          <table class="tbl">
+            <thead>
+              <tr><th>Ingredient</th><th class="num">Beg</th><th class="num">Received</th><th class="num">To Mix</th><th class="num">Sold (Raw)</th><th class="num">Transferred</th><th class="num">Adjusted</th><th class="num">End</th></tr>
+            </thead>
+            <tbody id="midvaleBalTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Logan inventory</h3><span class="panel-note">Beg → End balance</span></div>
+        <div class="table-scroll">
+          <table class="tbl">
+            <thead>
+              <tr><th>Ingredient</th><th class="num">Beg</th><th class="num">Received</th><th class="num">To Mix</th><th class="num">Sold (Raw)</th><th class="num">Transferred</th><th class="num">Adjusted</th><th class="num">End</th></tr>
+            </thead>
+            <tbody id="loganBalTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Combined — Midvale + Logan</h3><span class="panel-note">Beg → End balance</span></div>
+        <div class="table-scroll">
+          <table class="tbl">
+            <thead>
+              <tr><th>Ingredient</th><th class="num">Beg</th><th class="num">Received</th><th class="num">To Mix</th><th class="num">Sold (Raw)</th><th class="num">Transferred</th><th class="num">Adjusted</th><th class="num">End</th></tr>
+            </thead>
+            <tbody id="combinedBalTable"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <div class="panel">
       <div class="panel-head">
-        <h3>Batch log</h3>
+        <h3>Movements log</h3>
         <span class="panel-note" id="rowCount"></span>
       </div>
       <div class="table-scroll">
         <table class="tbl" id="entriesTable">
           <thead>
-            <tr><th>Time</th><th>Plant</th><th>Ingredient</th><th class="num">Amount</th><th>Logged by</th><th>Notes</th></tr>
+            <tr><th>Time</th><th>Location</th><th>Ingredient</th><th>Type</th><th class="num">Amount</th><th>Logged by</th><th>Notes</th></tr>
           </thead>
           <tbody></tbody>
         </table>
