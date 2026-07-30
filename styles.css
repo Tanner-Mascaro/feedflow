@@ -39,37 +39,43 @@ h1,h2,h3{font-family:var(--disp);letter-spacing:-.01em;margin:0}
 .login{
   min-height:100dvh;
   display:flex;align-items:center;justify-content:center;
-  padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
+  padding:calc(28px + env(safe-area-inset-top)) 20px calc(64px + env(safe-area-inset-bottom));
   background:
-    radial-gradient(1100px 500px at 80% -10%, rgba(27,58,107,.12), transparent 60%),
-    linear-gradient(180deg,#1A1D23,#16181D);
+    url('mountains-bg.svg') bottom center / 100% auto no-repeat,
+    linear-gradient(180deg,#0B1730,#081228);
   color:#F4F6F8;
+  position:relative;
 }
-.login-inner{width:100%;max-width:560px}
-.brand{display:flex;align-items:center;gap:12px;margin-bottom:44px}
-.brand-mark{height:48px;width:auto}
-.brand-name{font-family:var(--disp);font-weight:700;font-size:19px;line-height:1}
-.brand-sub{font-size:12.5px;color:#A7AEB8;margin-top:4px;letter-spacing:.01em}
+.login-inner{width:100%;max-width:560px;position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:48px}
+.brand-mark{height:52px;width:auto}
+.brand-name{font-family:var(--disp);font-weight:700;font-size:20px;line-height:1;letter-spacing:.01em}
+.brand-sub{font-size:12.5px;color:#8D96AC;margin-top:5px;letter-spacing:.01em}
 .heritage{color:var(--gold);font-weight:600}
-.login-h{font-size:clamp(28px,6vw,40px);font-weight:700;line-height:1.08;margin-bottom:14px}
-.login-p{color:#AEB5BF;font-size:15px;margin:0 0 22px}
-.role-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.login-h{
+  font-family:var(--disp);font-weight:700;
+  font-size:clamp(30px,6vw,42px);line-height:1.14;margin-bottom:16px;
+  letter-spacing:-.005em;
+}
+.login-p{color:#9AA3B8;font-size:15px;margin:0 0 26px}
+.role-grid{display:grid;grid-template-columns:1fr;gap:10px}
 .role{
   display:flex;align-items:center;gap:14px;text-align:left;
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.10);
-  border-radius:var(--r);padding:16px 18px;color:#fff;
+  background:#0E1E3C;
+  border:1px solid #1C2E52;
+  border-left:3px solid transparent;
+  border-radius:var(--r-sm);padding:15px 18px;color:#fff;
   transition:transform .12s ease, border-color .12s ease, background .12s ease;
 }
-.role:hover{transform:translateY(-1px);border-color:rgba(201,162,39,.55);background:rgba(27,58,107,.14)}
+.role:hover{transform:translateY(-1px);border-left-color:var(--gold);background:#122448;border-color:#28406E}
 .role-ic{
-  width:42px;height:42px;flex:none;border-radius:11px;
-  display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:16px;
-  background:var(--navy);color:#fff;
+  width:40px;height:40px;flex:none;border-radius:9px;
+  display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:15px;
+  background:var(--gold);color:var(--navy-d);
 }
 .role-tt{font-weight:600;font-size:15.5px}
-.role-ds{font-size:12.5px;color:#AEB5BF;margin-top:2px}
-.role-go{margin-left:auto;color:#7E8794;font-size:20px;transition:color .12s ease, transform .12s ease}
+.role-ds{font-size:12.5px;color:#8D96AC;margin-top:2px}
+.role-go{margin-left:auto;color:#4C5A7A;font-size:20px;transition:color .12s ease, transform .12s ease}
 .role:hover .role-go{color:var(--gold);transform:translateX(3px)}
 .login-foot{margin-top:26px;font-size:12px;color:#6E7681;letter-spacing:.02em}
 
