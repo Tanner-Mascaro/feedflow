@@ -12,7 +12,7 @@ const SUPABASE_URL = "https://ymejzjbabevzippdjitd.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_goJVuXzFM37hixhgGn-jTQ_KVS2PMbz";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzSWcJKId9_Un67IqbN2xYCWRNT13P9ckv7Nh67CJFMp9z2WxFwWwMEV_Xve5RfriOx/exec";
+const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxv6uz821tnRjLxJfDfkoKOfDu5zLdMzde5bB42SKB6ok5vGfjOqW1_fb1MSqCT4FVy/exec";
 function pushToSheet(movement){
   fetch(SHEETS_WEBHOOK_URL, {
     method: "POST",
