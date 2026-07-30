@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>FeedFlow — Batch Logging</title>
+  <meta name="description" content="Log feed batches at the mixer. No more end-of-day guesswork." />
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#16181D" />
+  <link rel="icon" href="favicon.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Libs (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="login" class="screen login">
+  <div class="login-inner">
+    <div class="brand">
+      <img src="icon-192.png" alt="" class="brand-mark" />
+      <div>
+        <div class="brand-name">FeedFlow</div>
+        <div class="brand-sub">Fur Breeders Agricultural Cooperative</div>
+      </div>
+    </div>
+
+    <h1 class="login-h">Log a batch in seconds.<br />Not from memory at 5 p.m.</h1>
+    <p class="login-p">Pick a role to open the demo.</p>
+
+    <div class="role-grid" id="roleGrid"><!-- roles injected --></div>
+
+    <p class="login-foot">Demo build · sample data · no real login wired yet</p>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<section id="app" class="screen app hidden">
+  <header class="topbar">
+    <div class="topbar-l">
+      <img src="icon-192.png" alt="" class="topbar-mark" />
+      <span class="topbar-name">FeedFlow</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-view="log" class="tab is-active">Log batch</button>
+      <button data-view="dash" class="tab">Dashboard</button>
+    </nav>
+    <div class="topbar-r">
+      <span class="who" id="whoAmI"></span>
+      <button class="btn-ghost" id="logoutBtn">Switch role</button>
+    </div>
+  </header>
+
+  <!-- ===== LOG VIEW ===== -->
+  <main id="view-log" class="view">
+    <div class="log-wrap">
+      <!-- Batch ticket -->
+      <form class="ticket" id="ticketForm" autocomplete="off">
+        <div class="ticket-notch"></div>
+        <div class="ticket-head">
+          <span class="ticket-kicker">Batch ticket</span>
+          <span class="ticket-no" id="ticketNo">—</span>
+        </div>
+
+        <div class="field">
+          <label for="plant">Plant</label>
+          <div class="seg" id="plantSeg">
+            <button type="button" class="seg-opt is-active" data-val="Sandy">Sandy</button>
+            <button type="button" class="seg-opt" data-val="Logan">Logan</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="ingredient">Ingredient</label>
+          <select id="ingredient" required></select>
+        </div>
+
+        <div class="field-row">
+          <div class="field grow">
+            <label for="qty">Amount used</label>
+            <input id="qty" type="number" inputmode="decimal" min="0" step="any" placeholder="0" required />
+          </div>
+          <div class="field">
+            <label for="unit">Unit</label>
+            <select id="unit">
+              <option value="lb">lb</option>
+              <option value="gal">gal</option>
+              <option value="ton">ton</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="notes">Notes <span class="opt">(optional)</span></label>
+          <input id="notes" type="text" placeholder="e.g. new supplier lot, ran short, etc." />
+        </div>
+
+        <button type="submit" class="btn-primary btn-lg">Log batch</button>
+        <p class="ticket-hint">Captured with time, plant, and your name — automatically.</p>
+      </form>
+
+      <!-- Today's log -->
+      <div class="today">
+        <div class="today-head">
+          <h2>Logged today</h2>
+          <span class="today-total" id="todayTotal">0 lb</span>
+        </div>
+        <ul class="entry-list" id="todayList"></ul>
+        <p class="empty" id="todayEmpty">Nothing logged yet today. Your first batch shows up here.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ===== DASHBOARD VIEW ===== -->
+  <main id="view-dash" class="view hidden">
+    <div class="dash-head">
+      <div>
+        <h1>Operations dashboard</h1>
+        <p class="dash-sub">Live raw-material usage across Sandy &amp; Logan. From estimates to actuals.</p>
+      </div>
+      <div class="dash-actions">
+        <select id="rangeSel" class="rangesel">
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="9999">All time</option>
+        </select>
+        <button class="btn-primary" id="exportBtn">Export to Excel</button>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="panels">
+      <div class="panel panel-chart">
+        <div class="panel-head"><h3>Usage by ingredient</h3><span class="panel-note" id="chartNote"></span></div>
+        <div class="chart-box"><canvas id="usageChart"></canvas></div>
+      </div>
+      <div class="panel panel-chart">
+        <div class="panel-head"><h3>Daily volume</h3><span class="panel-note">lb logged per day</span></div>
+        <div class="chart-box"><canvas id="dailyChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Batch log</h3>
+        <span class="panel-note" id="rowCount"></span>
+      </div>
+      <div class="table-scroll">
+        <table class="tbl" id="entriesTable">
+          <thead>
+            <tr><th>Time</th><th>Plant</th><th>Ingredient</th><th class="num">Amount</th><th>Logged by</th><th>Notes</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- toast -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
