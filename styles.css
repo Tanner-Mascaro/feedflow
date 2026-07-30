@@ -23,7 +23,7 @@
 }
 
 *{box-sizing:border-box}
-html,body{margin:0;padding:0}
+html,body{margin:0;padding:0;background:var(--paper)}
 body{
   font-family:var(--body);
   color:var(--ink);
@@ -39,7 +39,7 @@ h1,h2,h3{font-family:var(--disp);letter-spacing:-.01em;margin:0}
 .login{
   min-height:100dvh;
   display:flex;align-items:center;justify-content:center;
-  padding:28px 20px;
+  padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
   background:
     radial-gradient(1100px 500px at 80% -10%, rgba(20,107,84,.10), transparent 60%),
     linear-gradient(180deg,#1A1D23,#16181D);
@@ -77,7 +77,7 @@ h1,h2,h3{font-family:var(--disp);letter-spacing:-.01em;margin:0}
 .topbar{
   position:sticky;top:0;z-index:40;
   display:flex;align-items:center;gap:16px;
-  padding:10px 18px;
+  padding:calc(10px + env(safe-area-inset-top)) 18px 10px;
   background:rgba(255,255,255,.85);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line);
 }
@@ -98,7 +98,7 @@ h1,h2,h3{font-family:var(--disp);letter-spacing:-.01em;margin:0}
 }
 .btn-ghost:hover{border-color:var(--ink-3);color:var(--ink)}
 
-.view{max-width:1120px;margin:0 auto;padding:22px 18px 60px}
+.view{max-width:1120px;margin:0 auto;padding:22px 18px calc(60px + env(safe-area-inset-bottom))}
 
 /* ============ BUTTONS ============ */
 .btn-primary{
@@ -211,7 +211,7 @@ h1,h2,h3{font-family:var(--disp);letter-spacing:-.01em;margin:0}
 
 /* ============ TOAST ============ */
 .toast{
-  position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+  position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
   background:var(--ink);color:#fff;font-size:14px;font-weight:500;
   padding:12px 20px;border-radius:12px;box-shadow:var(--shadow);
   opacity:0;pointer-events:none;transition:.24s;z-index:100;display:flex;align-items:center;gap:9px;
