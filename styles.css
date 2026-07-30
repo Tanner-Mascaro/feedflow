@@ -98,7 +98,6 @@ h1,h2,h3{font-family:var(--disp);letter-spacing:-.01em;margin:0}
 }
 .tab.is-active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
 .topbar-r{margin-left:auto;display:flex;align-items:center;gap:12px}
-.who{font-size:13px;color:var(--ink-2);font-weight:500}
 .btn-ghost{
   border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
   font-size:13px;font-weight:600;padding:7px 12px;border-radius:9px;transition:.12s;

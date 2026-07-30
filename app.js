@@ -149,7 +149,6 @@ function signIn(roleId){
   state.role = role;
   $("#login").classList.add("hidden");
   $("#app").classList.remove("hidden");
-  $("#whoAmI").textContent = NAMES[roleId];
 
   // role-based access: tech = log only, cfo = dashboard only, manager = log + txn + dashboard
   const showLog  = roleId==="tech" || roleId==="manager";
@@ -159,11 +158,10 @@ function signIn(roleId){
   $('.tab[data-view="txn"]').classList.toggle("hidden", !showTxn);
   $('.tab[data-view="dash"]').classList.toggle("hidden", !showDash);
 
-  switchView(role.view);
   renderTicketNo();
   renderToday();
   renderTxnToday();
-  renderDashboard();
+  switchView(role.view); // renders the dashboard itself when the role lands on it
 }
 
 function signOut(){
