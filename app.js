@@ -43,12 +43,12 @@ const MOVEMENT_TYPE_LABEL = Object.fromEntries(MOVEMENT_TYPES.map(t=>[t.id, t.la
 MOVEMENT_TYPE_LABEL.to_mix = "To Mix";
 
 const ROLES = [
-  { id:"tech",    ini:"IT", title:"Inventory technician", desc:"Log batches at the mixer",                     view:"log"  },
-  { id:"manager", ini:"PM", title:"Plant manager (admin)", desc:"Log batches & transactions, review, export",   view:"dash" },
-  { id:"cfo",     ini:"FB", title:"CFO / leadership",      desc:"Dashboards, reports, cost savings",             view:"dash" },
+  { id:"tech",    ini:"FP", title:"Food Production",  desc:"Log batches at the mixer",                  view:"log"  },
+  { id:"manager", ini:"TH", title:"Plant Manager",     desc:"Review entries & log corrections",          view:"dash" },
+  { id:"cfo",     ini:"GM", title:"GM",                desc:"Reports & dashboards",                       view:"dash" },
 ];
 
-const NAMES = { tech:"Marco (tech)", manager:"Dana (manager)", cfo:"Dale — CFO" };
+const NAMES = { tech:"Marco (Food Production)", manager:"Todd Hawkes (Operations Manager)", cfo:"Dale (GM)" };
 
 let state = {
   role: null,
