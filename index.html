@@ -56,11 +56,17 @@
       <img src="logo-primary.png" alt="FBAC" class="topbar-mark" />
       <span class="topbar-name">FeedFlow</span>
     </div>
-    <nav class="tabs" id="tabs">
-      <button data-view="log" class="tab is-active">Log batch</button>
-      <button data-view="txn" class="tab">Transactions</button>
-      <button data-view="dash" class="tab">Dashboard</button>
-    </nav>
+    <div class="tabs-wrap">
+      <button class="menu-toggle" id="menuToggle" aria-haspopup="true" aria-expanded="false">
+        <span id="menuToggleLabel">Log batch</span>
+        <span class="menu-toggle-ic">▾</span>
+      </button>
+      <nav class="tabs" id="tabs">
+        <button data-view="log" class="tab is-active">Log batch</button>
+        <button data-view="txn" class="tab">Transactions</button>
+        <button data-view="dash" class="tab">Dashboard</button>
+      </nav>
+    </div>
     <div class="topbar-r">
       <button class="btn-ghost" id="logoutBtn">Switch role</button>
     </div>

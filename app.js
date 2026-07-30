@@ -169,11 +169,19 @@ function signOut(){
 
 /* ---------- VIEW SWITCH ---------- */
 function switchView(v){
-  $$(".tab").forEach(t=>t.classList.toggle("is-active", t.dataset.view===v));
+  const active = $$(".tab").find(t=>t.dataset.view===v);
+  $$(".tab").forEach(t=>t.classList.toggle("is-active", t===active));
   $("#view-log").classList.toggle("hidden", v!=="log");
   $("#view-txn").classList.toggle("hidden", v!=="txn");
   $("#view-dash").classList.toggle("hidden", v!=="dash");
+  if(active) $("#menuToggleLabel").textContent = active.textContent;
+  closeMenu();
   if(v==="dash") renderDashboard();
+}
+
+function closeMenu(){
+  $("#tabs").classList.remove("is-open");
+  $("#menuToggle").setAttribute("aria-expanded","false");
 }
 
 /* ---------- LOG BATCH (To Mix) VIEW ---------- */
@@ -486,6 +494,14 @@ async function init(){
 
   $("#logoutBtn").addEventListener("click", signOut);
   $("#tabs").addEventListener("click", e=>{ if(e.target.dataset.view) switchView(e.target.dataset.view); });
+  $("#menuToggle").addEventListener("click", e=>{
+    e.stopPropagation();
+    const open = $("#tabs").classList.toggle("is-open");
+    $("#menuToggle").setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  document.addEventListener("click", e=>{
+    if(!e.target.closest(".tabs-wrap")) closeMenu();
+  });
   $("#ticketForm").addEventListener("submit", submitTicket);
   $("#txnForm").addEventListener("submit", submitTxn);
   $("#txnType").addEventListener("change", updateTxnFieldsVisibility);
