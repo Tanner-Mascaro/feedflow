@@ -12,19 +12,35 @@ live via a Supabase realtime subscription when any device logs a batch.
 read/write access to the table. Fine for the demo with no auth wired up yet; tighten with
 RLS policies (or real auth) before this goes anywhere production-adjacent.
 
+## Live demo
+- **App:** https://feedflow-murex.vercel.app/ (auto-deploys on every push to `main`)
+- **Repo:** https://github.com/Tanner-Mascaro/feedflow
+
+Install it on a phone: open the URL → Safari (iOS) or Chrome (Android) → **Add to Home
+Screen** (or tap the Chrome install banner). It launches full-screen like a native app.
+
 ## Run it locally
 Because of the service worker, open it through a tiny web server (not `file://`):
 
 ```bash
-cd feedflow
 python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
 ## Deploy for the demo (free, ~2 min)
-1. Push this folder to a GitHub repo.
-2. Go to vercel.com → New Project → import the repo → Deploy. No settings needed.
-3. Open the live URL on your phone → browser menu → **Add to Home Screen**. It installs like an app.
+1. Push to the GitHub repo above (or your own fork).
+2. Vercel is already connected — pushing to `main` auto-deploys. For a fresh setup: vercel.com
+   → New Project → import the repo → Deploy. No build settings needed.
+3. Open the live URL on your phone → **Add to Home Screen**.
+
+## Service worker cache-busting
+`sw.js` caches the app shell (HTML/CSS/JS/icons) for offline use with a versioned cache name
+(`feedflow-vN`). Browsers only re-check for service-worker updates by diffing `sw.js` itself —
+**editing `styles.css` or `app.js` alone will not push to already-installed devices.** Whenever
+you change any cached file, bump the `CACHE` constant in `sw.js` (e.g. `v2` → `v3`) so installed
+PWAs actually detect the update and refetch. After deploying, fully quit and reopen the installed
+app on the phone to pick it up (it self-activates via `skipWaiting`/`clients.claim`, no waiting
+period, but still needs a relaunch to trigger the check).
 
 ## Demo flow (the pitch)
 1. **Log batch** as *Inventory technician* on a phone: pick plant, ingredient, amount → **Log batch**. Under 15 seconds, captured with time + name automatically.
@@ -46,3 +62,5 @@ Three logins show the role-based access: tech = logging only, manager = both, CF
 - Plants, roles, names: `ROLES` / `NAMES` in `app.js`.
 - Batch entries live in the Supabase `entries` table now — edit/delete rows there directly.
 - Brand colors live as CSS variables at the top of `styles.css`.
+- `icon-192.png`, `icon-512.png`, `icon-maskable.png`, `favicon.png`, `apple-touch-icon.png` are
+  placeholder monogram icons — swap in real branding whenever it's ready, same filenames.
