@@ -22,8 +22,6 @@ function pushToSheet(movement){
   }).catch(err => console.error("Sheets push failed", err));
 }
 
-const LOCATIONS = ["Midvale", "Logan"];
-
 const INGREDIENTS = [
   "Trout", "Spent Hen", "Turkey", "Liver", "Lungs", "Spleen", "Trimmings", "Beef",
   "Beef Salivary", "Cheese", "Egg", "Phos Acid", "Molasses", "Wheat Germ",
@@ -33,14 +31,13 @@ const INGREDIENTS = [
   "Soy", "Probiotics", "TM", "Auromix", "Tylan", "Cephalexin", "Water",
 ];
 
-const MOVEMENT_TYPES = [
-  { id:"received",    label:"Received" },
-  { id:"sold_raw",    label:"Sold (Raw)" },
-  { id:"transferred", label:"Transferred" },
-  { id:"adjusted",    label:"Adjusted" },
-];
-const MOVEMENT_TYPE_LABEL = Object.fromEntries(MOVEMENT_TYPES.map(t=>[t.id, t.label]));
-MOVEMENT_TYPE_LABEL.to_mix = "To Mix";
+const MOVEMENT_TYPE_LABEL = {
+  to_mix: "To Mix",
+  received: "Received",
+  sold_raw: "Sold (Raw)",
+  transferred: "Transferred",
+  adjusted: "Adjusted",
+};
 
 const ROLES = [
   { id:"tech",    ini:"FP", title:"Food Production",  desc:"Log batches at the mixer",                  view:"log"  },
@@ -268,8 +265,8 @@ async function submitTxn(ev){
   const ing = $("#txnIngredient").value;
   let qty = parseFloat($("#txnQty").value);
   if(!ing || !(qty>0)){ toast("Pick an ingredient and an amount."); return; }
-  const signOut = $(".seg-opt.is-active", $("#txnSignSeg"))?.dataset.val === "out";
-  if((type==="transferred" || type==="adjusted") && signOut) qty = -qty;
+  const isOutbound = $(".seg-opt.is-active", $("#txnSignSeg"))?.dataset.val === "out";
+  if((type==="transferred" || type==="adjusted") && isOutbound) qty = -qty;
 
   const draft = {
     ts: Date.now(),
