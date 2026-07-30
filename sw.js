@@ -1,5 +1,5 @@
 /* FeedFlow service worker — app-shell cache so it installs & opens offline */
-const CACHE = "feedflow-v6";
+const CACHE = "feedflow-v7";
 const SHELL = [
   "./",
   "./index.html",

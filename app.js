@@ -48,7 +48,7 @@ const ROLES = [
   { id:"cfo",     ini:"GM", title:"GM",                desc:"Reports & dashboards",                       view:"dash" },
 ];
 
-const NAMES = { tech:"Marco (Food Production)", manager:"Todd Hawkes (Operations Manager)", cfo:"Dale (GM)" };
+const NAMES = { tech:"Marco (Food Production)", manager:"Todd Hawkes (Operations Manager)", cfo:"Jamey Mascaro (GM)" };
 
 let state = {
   role: null,
