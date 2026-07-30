@@ -1,3 +1,4 @@
 *.xlsm
 *.xlsx
+*.docx
 .DS_Store

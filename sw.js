@@ -1,5 +1,5 @@
 /* FeedFlow service worker — app-shell cache so it installs & opens offline */
-const CACHE = "feedflow-v4";
+const CACHE = "feedflow-v5";
 const SHELL = [
   "./",
   "./index.html",
@@ -8,8 +8,11 @@ const SHELL = [
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
+  "./icon-maskable.png",
   "./favicon.png",
   "./apple-touch-icon.png",
+  "./logo-primary.png",
+  "./logo-white.png",
 ];
 
 self.addEventListener("install", (e) => {

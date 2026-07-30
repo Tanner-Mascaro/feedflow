@@ -377,7 +377,7 @@ function renderKpis(rows){
 }
 
 function renderCharts(rows){
-  const green="#146B54", greenL="#23947A", amber="#E8A317", ink3="#8A909B", line="#EEF1F4";
+  const navy="#1B3A6B", ink3="#888888", line="#EDEBE5";
   const mix = rows.filter(m=>m.type==="to_mix");
 
   // usage by ingredient (lb, to-mix only)
@@ -400,7 +400,7 @@ function renderCharts(rows){
   usageChart = new Chart($("#usageChart"), {
     type:"bar",
     data:{ labels:ingPairs.map(p=>p[0]),
-      datasets:[{ data:ingPairs.map(p=>p[1]), backgroundColor:green, borderRadius:6, maxBarThickness:26 }] },
+      datasets:[{ data:ingPairs.map(p=>p[1]), backgroundColor:navy, borderRadius:6, maxBarThickness:26 }] },
     options:{ indexAxis:"y", responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmt(c.parsed.x)} lb`}}},
       scales:{ x:{grid:{color:line},ticks:{callback:v=>fmt(v)}}, y:{grid:{display:false}} } }
@@ -410,8 +410,8 @@ function renderCharts(rows){
   dailyChart = new Chart($("#dailyChart"), {
     type:"line",
     data:{ labels:dayKeys.map(dateShort),
-      datasets:[{ data:dayKeys.map(k=>byDay[k]), borderColor:green, backgroundColor:"rgba(20,107,84,.10)",
-        fill:true, tension:.35, pointRadius:2, pointBackgroundColor:green, borderWidth:2 }] },
+      datasets:[{ data:dayKeys.map(k=>byDay[k]), borderColor:navy, backgroundColor:"rgba(27,58,107,.10)",
+        fill:true, tension:.35, pointRadius:2, pointBackgroundColor:navy, borderWidth:2 }] },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmt(c.parsed.y)} lb`}}},
       scales:{ x:{grid:{display:false}}, y:{grid:{color:line},ticks:{callback:v=>fmt(v)}} } }
