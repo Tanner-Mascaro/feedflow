@@ -1,5 +1,11 @@
 # FeedFlow
 
+**AI use:** Used Claude Sonnet 5 (Claude Code) for the Sprint 3 RBAC implementation (Supabase
+Auth + RLS policies in `supabase_rbac.sql`), the CI/CD pipeline (`lib.js` extraction,
+`lib.test.js`, `.github/workflows/ci.yml`), and the structured logging in `app.js`. Prior sprints'
+work (PWA/offline, Sheets webhook, dashboard/balance math, brand pass) was also built with Claude
+Code — see git log for the commit-by-commit breakdown.
+
 Inventory-movement PWA for Fur Breeders Agricultural Cooperative (FBAC), modeled on
 their real Excel inventory system. Food Production logs batches at the mixer; the
 Plant Manager logs receipts/sales/transfers/adjustments and reviews; the GM sees live
@@ -15,9 +21,19 @@ Vanilla HTML/CSS/JS. No build step. Data lives in Supabase (Postgres):
 workbook's Monthly Inventory math. Dashboard updates live via a Supabase realtime subscription
 whenever any device logs a movement.
 
-**Note:** RLS is disabled on both tables, so the anon key in `app.js` has open read/write access.
-Fine for now with no real auth wired up; tighten with RLS policies (or real auth) before this goes
-anywhere production-adjacent.
+## Role-based access control (RBAC)
+Real Supabase Auth (email/password), not a role picker. Each account has a row in a `profiles`
+table (`id, role, name`) where `role` is one of `tech | manager | cfo`. Row Level Security is
+enabled on `movements` and `opening_balances` (see [`supabase_rbac.sql`](supabase_rbac.sql)),
+enforced at the database layer regardless of what the client sends:
+- **`tech`** (Food Production) — can only `INSERT` `to_mix` movements.
+- **`manager`** (Plant Manager) — can `INSERT` any movement type, and write `opening_balances`.
+- **`cfo`** (GM) — read-only; no insert policy exists for that role at all.
+
+The client mirrors these boundaries in the UI (hiding tabs a role can't use), but the RLS
+policies are what actually stop a request — a `cfo` account can't write a movement even by
+calling the API directly, since there's no INSERT policy granting it. See `current_role_id()` in
+the migration for how a policy resolves a request's role from `auth.uid()`.
 
 ## Live demo
 - **App:** https://feedflow-murex.vercel.app/ (auto-deploys on every push to `main`)
@@ -31,7 +47,46 @@ Screen** (or tap the Chrome install banner). It launches full-screen like a nati
 - **Plant Manager** (Todd) — Log batch + Transactions (Received/Sold-Raw/Transferred/Adjusted) + Dashboard.
 - **GM** (Jamey) — Dashboard only.
 
-No real login yet — this is a role-picker demo. Swap for real auth before production (see below).
+Each signs in with their own email/password (Supabase Auth) — see [RBAC](#role-based-access-control-rbac) above.
+
+## Observability
+`log(level, event, context)` in `app.js` writes structured JSON lines (`{ts, level, event, ...}`)
+for every auth attempt, sign-in/sign-out, load failure, save failure, and Sheets-push failure —
+e.g. `{"ts":"...","level":"warn","event":"sign_in_failed","email":"...","message":"..."}`. Grep-able
+in the browser console today; ready to pipe into a log drain (Vercel log drains, Logflare, etc.)
+without touching any call site, since they all go through the one `log()` function.
+
+## CI/CD
+- **CI (test on PR):** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs `node --test`
+  on every pull request into `main` (and on push to `main`, as a safety net). Pure business logic
+  — balance math, ticket numbering, movement validation — lives in [`lib.js`](lib.js), free of
+  DOM/Supabase dependencies, so it's testable with Node's built-in test runner with zero
+  dependencies to install. Tests live in [`lib.test.js`](lib.test.js); run them locally with
+  `npm test`.
+- **CD (deploy on merge):** Vercel's GitHub integration auto-deploys on every push to `main` —
+  no separate workflow needed for that half.
+
+## Vernacular — patterns in this codebase
+**Gang-of-Four:**
+- **Singleton** — [`app.js:15`](app.js#L15), `const db = supabase.createClient(...)`. One Supabase
+  client instance created at module load and reused by every read/write/auth call in the app,
+  rather than each function constructing its own.
+- **Adapter** — [`app.js:72`](app.js#L72) `rowToMovement()` and [`app.js:86`](app.js#L86)
+  `movementToRow()`. Supabase's row shape (`snake_case`, `truck_no`, `logged_by`) is incompatible
+  with the app's `Movement` shape (`camelCase`, `truckNo`, `by`); these two functions adapt
+  between them in both directions so the rest of the app never sees a raw DB row.
+- **Observer** — [`app.js:109`](app.js#L109) `subscribeRealtime()`. The app subscribes to Postgres
+  change events on `movements`; every connected client (any role, any device) is a subscriber that
+  reacts to the same INSERT event by re-rendering its own view — none of them polls for changes.
+
+**Enterprise Integration Patterns:**
+- **Wire Tap** — [`app.js:28`](app.js#L28) `pushToSheet()`, called right after every successful
+  `movements` insert. It taps a copy of the movement onto a secondary channel (the Google Sheets
+  webhook) without affecting or blocking the primary flow — fire-and-forget, `.catch()` only logs.
+- **Publish-Subscribe Channel** — the same Supabase realtime channel from the Observer entry
+  above, described at the messaging-architecture level rather than the OO level: one INSERT event
+  is broadcast to every subscribed client, not routed to a single consumer (contrast with the
+  Point-to-Point Channel the Sheets webhook uses).
 
 ## Run it locally
 Because of the service worker, open it through a tiny web server (not `file://`):
@@ -63,8 +118,8 @@ Every movement fires a fire-and-forget webhook to a Google Apps Script Web App
 Script `doPost` auto-creates both tabs with headers if they don't exist yet.
 
 ## What to swap for production
-- **Auth** → Microsoft Entra ID (their existing work logins) via OAuth. Also means turning on
-  RLS policies on `movements`/`opening_balances` scoped to authenticated users/roles.
+- **Auth** → Microsoft Entra ID (their existing work logins) via OAuth, instead of standalone
+  Supabase email/password accounts. RLS policies stay the same either way.
 - **Live spreadsheet** → demo pushes to Google Sheets via the Apps Script webhook above.
   Production pushes into their existing Excel workbook via the Microsoft Graph API. The DB is
   the source of truth either way, so this is only the final "push" step changing.
@@ -82,7 +137,7 @@ the mink mark composited into the app icons) were extracted from the manual's em
 
 ## Edit the data
 - Ingredient list: `INGREDIENTS` array in `app.js`.
-- Locations, roles, names: `ROLES` / `NAMES` in `app.js`.
+- Locations/roles: `ROLES` in `app.js`. Per-account role/name: the `profiles` table in Supabase.
 - Movements live in the Supabase `movements` table — edit/delete rows there directly.
 - Opening balances live in the Supabase `opening_balances` table.
 - Brand colors live as CSS variables at the top of `styles.css`.

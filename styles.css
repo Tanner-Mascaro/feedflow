@@ -1,3 +1,4 @@
+/* AI use: Claude Sonnet 5 (Claude Code) helped style the Sprint 3 login form. */
 :root{
   /* FBAC brand palette (Brand Standards Manual v1.0, Sec. 4) */
   --paper:#F5F4F1;
@@ -78,6 +79,14 @@ h1,h2,h3{font-family:var(--disp);letter-spacing:-.01em;margin:0}
 .role-go{margin-left:auto;color:#4C5A7A;font-size:20px;transition:color .12s ease, transform .12s ease}
 .role:hover .role-go{color:var(--gold);transform:translateX(3px)}
 .login-foot{margin-top:26px;font-size:12px;color:#6E7681;letter-spacing:.02em}
+.login-form .field label{font-size:12.5px;font-weight:600;color:#9AA3B8;margin-bottom:7px}
+.login-form .field input{
+  background:#0E1E3C;border:1px solid #1C2E52;border-radius:var(--r-sm);
+  padding:13px 14px;color:#fff;font-size:15px;font-family:inherit;
+}
+.login-form .field input:focus{outline:none;border-color:var(--gold)}
+.login-form .btn-lg{width:100%;margin-top:6px}
+.login-error{color:#E8836F;font-size:13px;margin:-6px 0 12px}
 
 /* ============ APP SHELL ============ */
 .app{min-height:100dvh}

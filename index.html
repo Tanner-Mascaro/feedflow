@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- AI use: Claude Sonnet 5 (Claude Code) helped build the Sprint 3 real-auth login form. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -26,6 +27,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <link rel="stylesheet" href="styles.css" />
+  <script src="lib.js"></script>
 </head>
 <body>
 
@@ -41,11 +43,22 @@
     </div>
 
     <h1 class="login-h">Log a batch in seconds.<br />Not from memory at 5 p.m.</h1>
-    <p class="login-p">Pick a role to open the demo.</p>
+    <p class="login-p">Sign in with your FeedFlow account.</p>
 
-    <div class="role-grid" id="roleGrid"><!-- roles injected --></div>
+    <form class="login-form" id="loginForm" autocomplete="on">
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" type="email" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required />
+      </div>
+      <p class="login-error hidden" id="loginError"></p>
+      <button type="submit" class="btn-primary btn-lg" id="loginSubmit">Sign in</button>
+    </form>
 
-    <p class="login-foot">Demo build · sample data · no real login wired yet</p>
+    <p class="login-foot">Access and what you can log is scoped to your role.</p>
   </div>
 </section>
 
@@ -68,7 +81,7 @@
       </nav>
     </div>
     <div class="topbar-r">
-      <button class="btn-ghost" id="logoutBtn">Switch role</button>
+      <button class="btn-ghost" id="logoutBtn">Sign out</button>
     </div>
   </header>
 

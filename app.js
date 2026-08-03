@@ -1,3 +1,5 @@
+/* AI use: Claude Sonnet 5 (Claude Code) — Sprint 3 RBAC (auth/profile wiring),
+   structured logging, and the lib.js extraction. See README "AI use". */
 /* ============================================================
    FeedFlow — inventory logic (vanilla JS)
    Data lives in Supabase (Postgres):
@@ -12,6 +14,16 @@ const SUPABASE_URL = "https://ymejzjbabevzippdjitd.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_goJVuXzFM37hixhgGn-jTQ_KVS2PMbz";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+/* ---------- structured logging ----------
+   JSON lines to the console: {ts, level, event, ...context}. Grep-able and
+   ready to pipe into a log drain (Vercel/Logflare/etc.) without changing
+   call sites. */
+function log(level, event, context={}){
+  const line = { ts:new Date().toISOString(), level, event, ...context };
+  const method = level==="error" ? "error" : level==="warn" ? "warn" : "log";
+  console[method](JSON.stringify(line));
+}
+
 const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwcRZSibHEtyQtib7kOOS_h2f3SrB5LdKiu7HFaI0Jbcb0JOZlqvPJmk-HHsFdoVPnB/exec";
 function pushToSheet(movement){
   fetch(SHEETS_WEBHOOK_URL, {
@@ -19,7 +31,7 @@ function pushToSheet(movement){
     mode: "no-cors", // Apps Script doesn't send CORS headers; opaque response is fine, we don't read it
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(movement),
-  }).catch(err => console.error("Sheets push failed", err));
+  }).catch(err => log("warn", "sheets_push_failed", { message: String(err) }));
 }
 
 const INGREDIENTS = [
@@ -45,10 +57,9 @@ const ROLES = [
   { id:"cfo",     ini:"GM", title:"GM",                desc:"Reports & dashboards",                       view:"dash" },
 ];
 
-const NAMES = { tech:"Paige (Food Production)", manager:"Todd (Operations Manager)", cfo:"Jamey (GM)" };
-
 let state = {
   role: null,
+  userName: "",
   movements: [],
   openingBalances: [],
   location: "Midvale",
@@ -90,12 +101,13 @@ async function load(){
     db.from("movements").select("*").order("ts", { ascending:true }),
     db.from("opening_balances").select("*"),
   ]);
-  if(e1 || e2){ console.error(e1 || e2); toast("Couldn't load data — check connection."); return; }
+  if(e1 || e2){ log("error", "load_failed", { message: (e1||e2).message }); toast("Couldn't load data — check connection."); return; }
   state.movements = mv.map(rowToMovement);
   state.openingBalances = ob;
 }
+let realtimeChannel = null;
 function subscribeRealtime(){
-  db.channel("movements-changes")
+  realtimeChannel = db.channel("movements-changes")
     .on("postgres_changes", { event:"INSERT", schema:"public", table:"movements" }, payload=>{
       const row = payload.new;
       if(state.movements.some(m=>m.id===row.id)) return;
@@ -108,17 +120,15 @@ function subscribeRealtime(){
     })
     .subscribe();
 }
+function unsubscribeRealtime(){
+  if(realtimeChannel){ db.removeChannel(realtimeChannel); realtimeChannel = null; }
+}
 
 /* ---------- helpers ---------- */
 const $  = (s,el=document)=>el.querySelector(s);
 const $$ = (s,el=document)=>[...el.querySelectorAll(s)];
 const fmt = n => Number(n).toLocaleString("en-US");
-const round2 = n => Math.round(n*100)/100;
 const startOfToday = ()=>{ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); };
-function nextTicketNo(){
-  const max = state.movements.reduce((m,e)=>Math.max(m, e.id||0), 1041);
-  return "FF-" + String(max+1).padStart(5,"0");
-}
 function timeStr(ts){ return new Date(ts).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}); }
 function dateShort(ts){ return new Date(ts).toLocaleDateString("en-US",{month:"short",day:"numeric"}); }
 function fillIngredientSelect(sel){
@@ -126,45 +136,84 @@ function fillIngredientSelect(sel){
     INGREDIENTS.map(i=>`<option>${i}</option>`).join("");
 }
 
-/* ---------- LOGIN ---------- */
-function renderRoles(){
-  const grid = $("#roleGrid");
-  grid.innerHTML = ROLES.map(r=>`
-    <button class="role" data-role="${r.id}">
-      <span class="role-ic">${r.ini}</span>
-      <span class="role-main">
-        <span class="role-tt">${r.title}</span>
-        <span class="role-ds">${r.desc}</span>
-      </span>
-      <span class="role-go">&rsaquo;</span>
-    </button>`).join("");
-  $$(".role", grid).forEach(b=>b.addEventListener("click",()=>signIn(b.dataset.role)));
+/* ---------- AUTH / LOGIN ----------
+   Real Supabase Auth (email/password) + a `profiles` row (role, name) per
+   account. RLS on `movements`/`opening_balances` enforces the same role
+   boundaries server-side — see supabase_rbac.sql. */
+async function fetchProfile(userId){
+  const { data, error } = await db.from("profiles").select("role,name").eq("id", userId).single();
+  if(error){ log("error", "profile_fetch_failed", { userId, message: error.message }); return null; }
+  return data;
 }
 
-function signIn(roleId){
-  const role = ROLES.find(r=>r.id===roleId);
+function loginError(msg){
+  const el = $("#loginError");
+  if(!msg){ el.classList.add("hidden"); el.textContent=""; return; }
+  el.textContent = msg;
+  el.classList.remove("hidden");
+}
+
+async function handleLogin(ev){
+  ev.preventDefault();
+  loginError(null);
+  const email = $("#loginEmail").value.trim();
+  const password = $("#loginPassword").value;
+  const btn = $("#loginSubmit");
+  btn.disabled = true;
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  if(error){
+    btn.disabled = false;
+    log("warn", "sign_in_failed", { email, message: error.message });
+    loginError("Wrong email or password.");
+    return;
+  }
+  const profile = await fetchProfile(data.user.id);
+  btn.disabled = false;
+  if(!profile){
+    loginError("No FeedFlow role is set up for this account yet.");
+    await db.auth.signOut();
+    return;
+  }
+  log("info", "sign_in", { email, role: profile.role });
+  await enterApp(profile);
+}
+
+async function enterApp(profile){
+  const role = ROLES.find(r=>r.id===profile.role);
   state.role = role;
+  state.userName = profile.name;
   $("#login").classList.add("hidden");
   $("#app").classList.remove("hidden");
 
   // role-based access: tech = log only, cfo = dashboard only, manager = log + txn + dashboard
-  const showLog  = roleId==="tech" || roleId==="manager";
-  const showTxn  = roleId==="manager";
-  const showDash = roleId==="manager" || roleId==="cfo";
+  // (defense in depth — RLS on movements/opening_balances enforces the same boundaries server-side)
+  const showLog  = role.id==="tech" || role.id==="manager";
+  const showTxn  = role.id==="manager";
+  const showDash = role.id==="manager" || role.id==="cfo";
   $('.tab[data-view="log"]').classList.toggle("hidden", !showLog);
   $('.tab[data-view="txn"]').classList.toggle("hidden", !showTxn);
   $('.tab[data-view="dash"]').classList.toggle("hidden", !showDash);
 
+  await load();
   renderTicketNo();
   renderToday();
   renderTxnToday();
   switchView(role.view); // renders the dashboard itself when the role lands on it
+  subscribeRealtime();
 }
 
-function signOut(){
+async function signOut(){
+  log("info", "sign_out", { role: state.role && state.role.id });
+  unsubscribeRealtime();
+  await db.auth.signOut();
   state.role = null;
+  state.userName = "";
+  state.movements = [];
+  state.openingBalances = [];
   $("#app").classList.add("hidden");
   $("#login").classList.remove("hidden");
+  $("#loginForm").reset();
 }
 
 /* ---------- VIEW SWITCH ---------- */
@@ -185,7 +234,7 @@ function closeMenu(){
 }
 
 /* ---------- LOG BATCH (To Mix) VIEW ---------- */
-function renderTicketNo(){ $("#ticketNo").textContent = nextTicketNo(); }
+function renderTicketNo(){ $("#ticketNo").textContent = nextTicketNo(state.movements); }
 
 function renderToday(){
   const t0 = startOfToday();
@@ -211,7 +260,8 @@ async function submitTicket(ev){
   ev.preventDefault();
   const ing = $("#ingredient").value;
   const qty = parseFloat($("#qty").value);
-  if(!ing || !(qty>0)){ toast("Pick an ingredient and an amount."); return; }
+  const err = validateMovementInput(ing, qty);
+  if(err){ toast(err); return; }
 
   const draft = {
     ts: Date.now(),
@@ -220,7 +270,7 @@ async function submitTicket(ev){
     type: "to_mix",
     qty,
     unit: $("#unit").value,
-    by: NAMES[state.role.id] || "Demo user",
+    by: state.userName,
     notes: $("#notes").value.trim(),
   };
 
@@ -229,7 +279,7 @@ async function submitTicket(ev){
   const { data, error } = await db.from("movements").insert(movementToRow(draft)).select().single();
   submitBtn.disabled = false;
 
-  if(error){ console.error(error); toast("Couldn't save batch — try again."); return; }
+  if(error){ log("error", "batch_save_failed", { message: error.message }); toast("Couldn't save batch — try again."); return; }
 
   const m = rowToMovement(data);
   state.movements.push(m);
@@ -272,7 +322,8 @@ async function submitTxn(ev){
   const type = $("#txnType").value;
   const ing = $("#txnIngredient").value;
   let qty = parseFloat($("#txnQty").value);
-  if(!ing || !(qty>0)){ toast("Pick an ingredient and an amount."); return; }
+  const err = validateMovementInput(ing, qty);
+  if(err){ toast(err); return; }
   const isOutbound = $(".seg-opt.is-active", $("#txnSignSeg"))?.dataset.val === "out";
   if((type==="transferred" || type==="adjusted") && isOutbound) qty = -qty;
 
@@ -285,7 +336,7 @@ async function submitTxn(ev){
     unit: $("#txnUnit").value,
     truckNo: $("#txnTruck").value.trim(),
     notes: $("#txnNotes").value.trim(),
-    by: NAMES[state.role.id] || "Demo user",
+    by: state.userName,
   };
 
   const submitBtn = ev.target.querySelector('button[type="submit"]');
@@ -293,7 +344,7 @@ async function submitTxn(ev){
   const { data, error } = await db.from("movements").insert(movementToRow(draft)).select().single();
   submitBtn.disabled = false;
 
-  if(error){ console.error(error); toast("Couldn't save transaction — try again."); return; }
+  if(error){ log("error", "transaction_save_failed", { message: error.message }); toast("Couldn't save transaction — try again."); return; }
 
   const m = rowToMovement(data);
   state.movements.push(m);
@@ -314,35 +365,6 @@ function inRange(){
   return state.movements.filter(m=>m.ts>=cutoff);
 }
 
-function computeBalances(location){
-  const ob = {};
-  state.openingBalances.filter(o=>o.location===location).forEach(o=>{ ob[o.ingredient] = Number(o.qty); });
-  const rows = {};
-  INGREDIENTS.forEach(ing=>{ rows[ing] = { ingredient:ing, beg:ob[ing]||0, received:0, toMix:0, soldRaw:0, transferred:0, adjusted:0 }; });
-  state.movements.filter(m=>m.location===location).forEach(m=>{
-    if(!rows[m.ingredient]) rows[m.ingredient] = { ingredient:m.ingredient, beg:ob[m.ingredient]||0, received:0, toMix:0, soldRaw:0, transferred:0, adjusted:0 };
-    const r = rows[m.ingredient];
-    if(m.type==="received") r.received += m.qty;
-    else if(m.type==="to_mix") r.toMix += m.qty;
-    else if(m.type==="sold_raw") r.soldRaw += m.qty;
-    else if(m.type==="transferred") r.transferred += m.qty;
-    else if(m.type==="adjusted") r.adjusted += m.qty;
-  });
-  return Object.values(rows).map(r=>({
-    ...r,
-    end: r.beg + r.received - r.toMix - r.soldRaw + r.transferred + r.adjusted,
-  }));
-}
-function combineBalances(...groups){
-  const map = {};
-  groups.flat().forEach(r=>{
-    const m = map[r.ingredient] || (map[r.ingredient] = { ingredient:r.ingredient, beg:0, received:0, toMix:0, soldRaw:0, transferred:0, adjusted:0, end:0 });
-    m.beg += r.beg; m.received += r.received; m.toMix += r.toMix;
-    m.soldRaw += r.soldRaw; m.transferred += r.transferred; m.adjusted += r.adjusted; m.end += r.end;
-  });
-  return Object.values(map);
-}
-
 function renderDashboard(){
   const rows = inRange();
   renderKpis(rows);
@@ -351,8 +373,8 @@ function renderDashboard(){
   $("#rowCount").textContent = `${rows.length} movements`;
   $("#chartNote").textContent = `lb, ${state.range>=9999?"all time":"last "+state.range+" days"}`;
 
-  const midBal = computeBalances("Midvale");
-  const loganBal = computeBalances("Logan");
+  const midBal = computeBalances(INGREDIENTS, state.movements, state.openingBalances, "Midvale");
+  const loganBal = computeBalances(INGREDIENTS, state.movements, state.openingBalances, "Logan");
   renderBalanceTable("midvaleBalTable", midBal);
   renderBalanceTable("loganBalTable", loganBal);
   renderBalanceTable("combinedBalTable", combineBalances(midBal, loganBal));
@@ -488,7 +510,7 @@ function toast(msg){
 
 /* ---------- wire up ---------- */
 async function init(){
-  renderRoles();
+  $("#loginForm").addEventListener("submit", handleLogin);
   fillIngredientSelect($("#ingredient"));
   fillIngredientSelect($("#txnIngredient"));
 
@@ -525,9 +547,12 @@ async function init(){
 
   updateTxnFieldsVisibility();
 
-  await load();
-  if(state.role){ renderTicketNo(); renderToday(); renderTxnToday(); renderDashboard(); }
-  subscribeRealtime();
+  const { data:{ session } } = await db.auth.getSession();
+  if(session){
+    const profile = await fetchProfile(session.user.id);
+    if(profile) await enterApp(profile);
+    else await db.auth.signOut();
+  }
 }
 init();
 
