@@ -52,9 +52,9 @@ const MOVEMENT_TYPE_LABEL = {
 };
 
 const ROLES = [
-  { id:"tech",    ini:"FP", title:"Food Production",  desc:"Log batches at the mixer",                  view:"log"  },
-  { id:"manager", ini:"TH", title:"Plant Manager",     desc:"Review entries & log corrections",          view:"dash" },
-  { id:"cfo",     ini:"GM", title:"GM",                desc:"Reports & dashboards",                       view:"dash" },
+  { id:"tech",    view:"log"  },
+  { id:"manager", view:"dash" },
+  { id:"cfo",     view:"dash" },
 ];
 
 let state = {

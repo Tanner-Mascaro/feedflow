@@ -1,5 +1,14 @@
 # FeedFlow
 
+[![CI](https://github.com/Tanner-Mascaro/feedflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Tanner-Mascaro/feedflow/actions/workflows/ci.yml)
+
+**CS 3660 Sprint 3 capstone — what this satisfies:**
+- **Perfect Framework concern:** RBAC — see [Role-based access control](#role-based-access-control-rbac).
+- **Advanced platform tech:** PWA / offline (service worker) — see [Offline / PWA](#offline--pwa-advanced-platform-tech).
+- **CI/CD pipeline:** GitHub Actions (test on PR) + Vercel (deploy on merge) — see [CI/CD](#cicd).
+- **GoF / EIP vernacular:** see [Vernacular](#vernacular--patterns-in-this-codebase).
+- **Observability:** structured logging — see [Observability](#observability).
+
 **AI use:** Used Claude Sonnet 5 (Claude Code) for the Sprint 3 RBAC implementation (Supabase
 Auth + RLS policies in `supabase_rbac.sql`), the CI/CD pipeline (`lib.js` extraction,
 `lib.test.js`, `.github/workflows/ci.yml`), and the structured logging in `app.js`. Prior sprints'
@@ -102,9 +111,18 @@ python3 -m http.server 8000
    → New Project → import the repo → Deploy. No build settings needed.
 3. Open the live URL on your phone → **Add to Home Screen**.
 
-## Service worker cache-busting
-`sw.js` caches the app shell (HTML/CSS/JS/icons) for offline use with a versioned cache name
-(`feedflow-vN`). Browsers only re-check for service-worker updates by diffing `sw.js` itself —
+## Offline / PWA (advanced platform tech)
+FeedFlow installs as a real offline-capable app, not just a bookmarked site. API surface used,
+all in [`sw.js`](sw.js) and [`manifest.webmanifest`](manifest.webmanifest):
+- **Service Worker API** — `navigator.serviceWorker.register()` ([`app.js`](app.js), bottom) installs
+  `sw.js`, which handles `install`/`activate`/`fetch` events directly.
+- **Cache Storage API** — `caches.open()`, `.addAll()`, `.match()`, `.put()` implement a cache-first
+  strategy for the app shell (HTML/CSS/JS/icons) and a network-first strategy for CDN libs/fonts,
+  falling back to the cached shell when offline.
+- **Web App Manifest** — `manifest.webmanifest` + `apple-mobile-web-app-*` meta tags make it
+  installable full-screen from the browser's "Add to Home Screen" flow on iOS/Android.
+
+Cache-busting: browsers only re-check for service-worker updates by diffing `sw.js` itself —
 **editing `styles.css` or `app.js` alone will not push to already-installed devices.** Whenever
 you change any cached file, bump the `CACHE` constant in `sw.js` (e.g. `v9` → `v10`) so installed
 PWAs actually detect the update and refetch. After deploying, fully quit and reopen the installed
