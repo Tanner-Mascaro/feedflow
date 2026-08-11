@@ -10,8 +10,8 @@
   <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#16181D" />
-  <link rel="icon" href="favicon.png" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" href="icons/favicon.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -33,60 +33,74 @@
 
 <!-- ============ LOGIN ============ -->
 <section id="login" class="screen login">
-  <div class="login-inner">
+  <div class="login-hero">
     <div class="brand">
-      <img src="logo-white.png" alt="FBAC" class="brand-mark" />
+      <img src="icons/logo-white.png" alt="FBAC" class="brand-mark" />
       <div>
         <div class="brand-name">FeedFlow</div>
         <div class="brand-sub">Fur Breeders Agricultural Cooperative <span class="heritage">· Since 1939</span></div>
       </div>
     </div>
-
     <h1 class="login-h">Log a batch in seconds.<br />Not from memory at 5 p.m.</h1>
     <p class="login-p">Sign in with your FeedFlow account.</p>
+    <p class="login-foot">Access and what you can log is scoped to your role.</p>
+  </div>
 
+  <div class="login-formside">
     <form class="login-form" id="loginForm" autocomplete="on">
       <div class="field">
         <label for="loginEmail">Email</label>
-        <input id="loginEmail" type="email" autocomplete="username" required />
+        <div class="field-icon">
+          <input id="loginEmail" type="email" autocomplete="username" required />
+          <svg class="field-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+        </div>
       </div>
       <div class="field">
         <label for="loginPassword">Password</label>
-        <input id="loginPassword" type="password" autocomplete="current-password" required />
+        <div class="field-icon">
+          <input id="loginPassword" type="password" autocomplete="current-password" required />
+          <svg class="field-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
       </div>
       <p class="login-error hidden" id="loginError"></p>
       <button type="submit" class="btn-primary btn-lg" id="loginSubmit">Sign in</button>
     </form>
-
-    <p class="login-foot">Access and what you can log is scoped to your role.</p>
   </div>
 </section>
 
 <!-- ============ APP ============ -->
 <section id="app" class="screen app hidden">
-  <header class="topbar">
-    <div class="topbar-l">
-      <img src="logo-primary.png" alt="FBAC" class="topbar-mark" />
-      <span class="topbar-name">FeedFlow</span>
-    </div>
-    <div class="tabs-wrap">
-      <button class="menu-toggle" id="menuToggle" aria-haspopup="true" aria-expanded="false">
-        <span id="menuToggleLabel">Log batch</span>
-        <span class="menu-toggle-ic">▾</span>
-      </button>
-      <nav class="tabs" id="tabs">
-        <button data-view="log" class="tab is-active">Log batch</button>
-        <button data-view="txn" class="tab">Transactions</button>
-        <button data-view="dash" class="tab">Dashboard</button>
-      </nav>
-    </div>
-    <div class="topbar-r">
-      <button class="btn-ghost" id="logoutBtn">Sign out</button>
-    </div>
+  <!-- mobile-only slim top strip: brand + sign out (nav lives in the bottom bar) -->
+  <header class="topbar-mobile">
+    <img src="icons/logo-white.png" alt="FBAC" class="topbar-mark" />
+    <span class="topbar-name">FeedFlow</span>
+    <button class="btn-ghost js-logout" id="logoutBtnMobile">Sign out</button>
   </header>
 
+  <div class="app-shell">
+    <!-- desktop-only sidebar: brand + nav + sign out -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="icons/logo-white.png" alt="FBAC" class="topbar-mark" />
+        <span class="topbar-name">FeedFlow</span>
+      </div>
+      <nav class="side-nav">
+        <button data-view="log" class="tab is-active">
+          <span class="tab-ic" aria-hidden="true">▤</span> Log batch
+        </button>
+        <button data-view="txn" class="tab">
+          <span class="tab-ic" aria-hidden="true">⇄</span> Transactions
+        </button>
+        <button data-view="dash" class="tab">
+          <span class="tab-ic" aria-hidden="true">▦</span> Dashboard
+        </button>
+      </nav>
+      <button class="btn-ghost js-logout sidebar-signout" id="logoutBtnDesktop">Sign out</button>
+    </aside>
+
+    <div class="content">
   <!-- ===== LOG BATCH (TO MIX) VIEW ===== -->
-  <main id="view-log" class="view">
+  <div id="view-log" class="view">
     <div class="log-wrap">
       <!-- Batch ticket -->
       <form class="ticket" id="ticketForm" autocomplete="off">
@@ -143,10 +157,10 @@
         <p class="empty" id="todayEmpty">Nothing logged yet today. Your first batch shows up here.</p>
       </div>
     </div>
-  </main>
+  </div>
 
   <!-- ===== TRANSACTIONS VIEW ===== -->
-  <main id="view-txn" class="view hidden">
+  <div id="view-txn" class="view hidden">
     <div class="log-wrap">
       <!-- Transaction ticket -->
       <form class="ticket" id="txnForm" autocomplete="off">
@@ -224,10 +238,10 @@
         <p class="empty" id="txnTodayEmpty">Nothing logged yet today. Your first transaction shows up here.</p>
       </div>
     </div>
-  </main>
+  </div>
 
   <!-- ===== DASHBOARD VIEW ===== -->
-  <main id="view-dash" class="view hidden">
+  <div id="view-dash" class="view hidden">
     <div class="dash-head">
       <div>
         <h1>Operations dashboard</h1>
@@ -308,7 +322,22 @@
         </table>
       </div>
     </div>
-  </main>
+    </div>
+    </div>
+  </div>
+
+  <!-- mobile-only bottom tab bar -->
+  <nav class="bottom-nav" id="tabs">
+    <button data-view="log" class="tab is-active">
+      <span class="tab-ic" aria-hidden="true">▤</span> Log
+    </button>
+    <button data-view="txn" class="tab">
+      <span class="tab-ic" aria-hidden="true">⇄</span> Txns
+    </button>
+    <button data-view="dash" class="tab">
+      <span class="tab-ic" aria-hidden="true">▦</span> Dash
+    </button>
+  </nav>
 </section>
 
 <!-- toast -->

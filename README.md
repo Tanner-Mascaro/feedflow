@@ -146,12 +146,29 @@ Script `doPost` auto-creates both tabs with headers if they don't exist yet.
   checklist, `CloseMonth` macro, balance rollover, Snapshots archive); this app currently just
   accumulates against a single seeded opening balance with no month boundary.
 
+## Roadmap — planned additions
+As more people come onto the app and it connects to more systems, the next pieces of work:
+- **Framework migration → SvelteKit.** Still vanilla JS/no-build today; once the app grows past
+  a few views this gets rewritten as SvelteKit components (stores for `state`, file-based routing
+  for the three views, server routes for anything that needs to keep a key off the client). The
+  design system (CSS tokens in `styles.css`) carries over unchanged — only the DOM-update layer
+  in `app.js` gets replaced.
+- **PDF reports.** A server-rendered (Playwright/headless-Chrome) export for GM-facing monthly
+  reports, branded to the FBAC Brand Standards Manual — a step up from the raw Excel export
+  (`exportExcel()` in `app.js`) for anything that needs to look like a finished document.
+- **Observability drain.** `log()` already emits structured JSON lines (see
+  [Observability](#observability)); next step is piping them into an actual log drain (Vercel log
+  drains, Logflare) instead of just the browser console.
+- **Concurrency/abuse guards.** Fine at 3 users; once more people are logging movements
+  concurrently, worth adding duplicate/rapid-resubmit guards on the ticket forms — RLS stops
+  unauthorized writes but doesn't stop a double-tap.
+
 ## Brand
 Colors, typography, and logo usage follow FBAC's Brand Standards Manual (FBAC Blue #1B3A6B,
 Heritage Gold #C9A227, Inter for body text, Roboto Slab standing in for the unavailable western
 display typeface). The manual itself and the internal `.xlsm` inventory workbook are gitignored —
-confidential, not for public distribution. Logo assets (`logo-primary.png`, `logo-white.png`, and
-the mink mark composited into the app icons) were extracted from the manual's embedded images.
+confidential, not for public distribution. Logo assets (`icons/logo-white.png` and the mink mark
+composited into the app icons) were extracted from the manual's embedded images.
 
 ## Edit the data
 - Ingredient list: `INGREDIENTS` array in `app.js`.

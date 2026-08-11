@@ -191,9 +191,9 @@ async function enterApp(profile){
   const showLog  = role.id==="tech" || role.id==="manager";
   const showTxn  = role.id==="manager";
   const showDash = role.id==="manager" || role.id==="cfo";
-  $('.tab[data-view="log"]').classList.toggle("hidden", !showLog);
-  $('.tab[data-view="txn"]').classList.toggle("hidden", !showTxn);
-  $('.tab[data-view="dash"]').classList.toggle("hidden", !showDash);
+  $$('.tab[data-view="log"]').forEach(t=>t.classList.toggle("hidden", !showLog));
+  $$('.tab[data-view="txn"]').forEach(t=>t.classList.toggle("hidden", !showTxn));
+  $$('.tab[data-view="dash"]').forEach(t=>t.classList.toggle("hidden", !showDash));
 
   await load();
   renderTicketNo();
@@ -218,19 +218,11 @@ async function signOut(){
 
 /* ---------- VIEW SWITCH ---------- */
 function switchView(v){
-  const active = $$(".tab").find(t=>t.dataset.view===v);
-  $$(".tab").forEach(t=>t.classList.toggle("is-active", t===active));
+  $$(".tab").forEach(t=>t.classList.toggle("is-active", t.dataset.view===v));
   $("#view-log").classList.toggle("hidden", v!=="log");
   $("#view-txn").classList.toggle("hidden", v!=="txn");
   $("#view-dash").classList.toggle("hidden", v!=="dash");
-  if(active) $("#menuToggleLabel").textContent = active.textContent;
-  closeMenu();
   if(v==="dash") renderDashboard();
-}
-
-function closeMenu(){
-  $("#tabs").classList.remove("is-open");
-  $("#menuToggle").setAttribute("aria-expanded","false");
 }
 
 /* ---------- LOG BATCH (To Mix) VIEW ---------- */
@@ -388,21 +380,24 @@ function renderKpis(rows){
   const perDay = Math.round(lb/days);
 
   const kpis = [
-    { l:"To Mix logged",      v:fmt(lb)+" lb",  s:`across ${mix.length} batches` },
-    { l:"Liquid to mix",      v:fmt(gal)+" gal", s:"fats & liquids" },
-    { l:"Avg per day",        v:fmt(perDay)+" lb", s:`over ${days} active days` },
-    { l:"Captured at source", v:"100%",          s:"vs. end-of-day recall", accent:true },
+    { l:"To Mix logged",      v:fmt(lb)+" lb",  s:`across ${mix.length} batches`, ic:"▤", tone:"blue" },
+    { l:"Liquid to mix",      v:fmt(gal)+" gal", s:"fats & liquids", ic:"◈", tone:"teal" },
+    { l:"Avg per day",        v:fmt(perDay)+" lb", s:`over ${days} active days`, ic:"◔", tone:"purple" },
+    { l:"Captured at source", v:"100%",          s:"vs. end-of-day recall", ic:"✓", tone:"gold", accent:true },
   ];
   $("#kpis").innerHTML = kpis.map(k=>`
     <div class="kpi ${k.accent?'accent':''}">
-      <div class="kpi-label">${k.l}</div>
+      <div class="kpi-top">
+        <span class="kpi-ic kpi-ic-${k.tone}">${k.ic}</span>
+        <div class="kpi-label">${k.l}</div>
+      </div>
       <div class="kpi-val">${k.v}</div>
       <div class="kpi-sub">${k.s}</div>
     </div>`).join("");
 }
 
 function renderCharts(rows){
-  const navy="#1B3A6B", ink3="#888888", line="#EDEBE5";
+  const ink3="#8A96B4", line="rgba(255,255,255,.08)";
   const mix = rows.filter(m=>m.type==="to_mix");
 
   // usage by ingredient (lb, to-mix only)
@@ -421,22 +416,32 @@ function renderCharts(rows){
   Chart.defaults.font.family = "Inter, system-ui, sans-serif";
   Chart.defaults.color = ink3;
 
+  const barCtx = $("#usageChart").getContext("2d");
+  const barGrad = barCtx.createLinearGradient(0, 0, barCtx.canvas.width || 400, 0);
+  barGrad.addColorStop(0, "#2F65AA");
+  barGrad.addColorStop(1, "#7FB4F0");
+
   usageChart && usageChart.destroy();
   usageChart = new Chart($("#usageChart"), {
     type:"bar",
     data:{ labels:ingPairs.map(p=>p[0]),
-      datasets:[{ data:ingPairs.map(p=>p[1]), backgroundColor:navy, borderRadius:6, maxBarThickness:26 }] },
+      datasets:[{ data:ingPairs.map(p=>p[1]), backgroundColor:barGrad, borderRadius:6, maxBarThickness:26 }] },
     options:{ indexAxis:"y", responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmt(c.parsed.x)} lb`}}},
       scales:{ x:{grid:{color:line},ticks:{callback:v=>fmt(v)}}, y:{grid:{display:false}} } }
   });
 
+  const lineCtx = $("#dailyChart").getContext("2d");
+  const lineGrad = lineCtx.createLinearGradient(0, 0, 0, lineCtx.canvas.height || 260);
+  lineGrad.addColorStop(0, "rgba(216,179,74,.38)");
+  lineGrad.addColorStop(1, "rgba(216,179,74,0)");
+
   dailyChart && dailyChart.destroy();
   dailyChart = new Chart($("#dailyChart"), {
     type:"line",
     data:{ labels:dayKeys.map(dateShort),
-      datasets:[{ data:dayKeys.map(k=>byDay[k]), borderColor:navy, backgroundColor:"rgba(27,58,107,.10)",
-        fill:true, tension:.35, pointRadius:2, pointBackgroundColor:navy, borderWidth:2 }] },
+      datasets:[{ data:dayKeys.map(k=>byDay[k]), borderColor:"#D8B34A", backgroundColor:lineGrad,
+        fill:true, tension:.35, pointRadius:2, pointBackgroundColor:"#D8B34A", borderWidth:2 }] },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmt(c.parsed.y)} lb`}}},
       scales:{ x:{grid:{display:false}}, y:{grid:{color:line},ticks:{callback:v=>fmt(v)}} } }
@@ -514,15 +519,10 @@ async function init(){
   fillIngredientSelect($("#ingredient"));
   fillIngredientSelect($("#txnIngredient"));
 
-  $("#logoutBtn").addEventListener("click", signOut);
-  $("#tabs").addEventListener("click", e=>{ if(e.target.dataset.view) switchView(e.target.dataset.view); });
-  $("#menuToggle").addEventListener("click", e=>{
-    e.stopPropagation();
-    const open = $("#tabs").classList.toggle("is-open");
-    $("#menuToggle").setAttribute("aria-expanded", open ? "true" : "false");
-  });
+  $$(".js-logout").forEach(b=>b.addEventListener("click", signOut));
   document.addEventListener("click", e=>{
-    if(!e.target.closest(".tabs-wrap")) closeMenu();
+    const t = e.target.closest(".tab");
+    if(t && t.dataset.view) switchView(t.dataset.view);
   });
   $("#ticketForm").addEventListener("submit", submitTicket);
   $("#txnForm").addEventListener("submit", submitTxn);

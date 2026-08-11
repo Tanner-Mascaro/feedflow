@@ -1,19 +1,17 @@
 /* FeedFlow service worker — app-shell cache so it installs & opens offline */
-const CACHE = "feedflow-v12";
+const CACHE = "feedflow-v23";
 const SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
   "./manifest.webmanifest",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./icon-maskable.png",
-  "./favicon.png",
-  "./apple-touch-icon.png",
-  "./logo-primary.png",
-  "./logo-white.png",
-  "./mountains-bg.svg",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-maskable.png",
+  "./icons/favicon.png",
+  "./icons/apple-touch-icon.png",
+  "./icons/logo-white.png",
 ];
 
 self.addEventListener("install", (e) => {
